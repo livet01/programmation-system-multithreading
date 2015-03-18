@@ -1,18 +1,24 @@
+#define _POSIX_SOURCE
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/types.h>
 #include <signal.h>
-#define FATHER 1
+#include <stdlib.h>
+
 #define SON 0
 
 int processus;
 
 void handler(int sig){
 	if(sig == SIGUSR1){
-		if(processus == FATHER){
-			printf("Father: hit\n");
+		if(processus == SON){
+			printf("Son: --->down<---\n");
+			kill(getppid(),SIGCHLD);
+			exit(1);
 		}
 		else{
-			printf("Son: down\n");
+			printf("Father: --->hit<---\n");
+			exit(1);
 		}
 	}
 }
@@ -20,17 +26,21 @@ void handler(int sig){
 int main(int argc, char ** argv){
 
 	signal(SIGUSR1,handler);
-	processus = fork() == 0;
+	processus = fork();
 	if(processus == SON){
 		while(1){
-		printf("Son: I'm alive\n");
-		sleep(10);
+			printf("Son: I'm alive\n");
+			sleep(10);
 		}
 	}
 	else{
-		printf("Father\n");
-		sleep(10);		
-		while(1);
+		sleep(10);	
+		printf("Father: I'll kill you son\n");	
+		kill(processus,SIGUSR1);
+		while(1){
+			printf("Father: I'm your father\n");
+			sleep(10);
+		}
 	}
 	return 0;
 }
