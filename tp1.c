@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <signal.h>
 #include <stdlib.h>
 
@@ -25,20 +26,36 @@ void father_handler(int sig){
 }
 
 int main(int argc, char ** argv){
+	sigset_t mask;
+	struct sigaction signal_conf;
+
+	sigfillset(&mask);
+	sigdelset(&mask,SIGUSR1);
+	signal_conf.sa_flags = 0;
 
 	processus = fork();
 	if(processus == SON){
-		signal(SIGUSR1,son_handler);
+		signal_conf.sa_handler = son_handler;
+		signal_conf.sa_mask = mask;
+
+		sigaction(SIGUSR1,&signal_conf,NULL);
+
 		while(1){
 			printf("Son: I'm alive\n");
 			sleep(10);
 		}
 	}
 	else{
-		signal(SIGUSR1,father_handler);
-		sleep(10);	
+		sigdelset(&mask,SIGCHLD);
+		signal_conf.sa_handler = father_handler;
+		signal_conf.sa_mask = mask;
+
+		sigaction(SIGUSR1,&signal_conf,NULL);
+
+		sleep(10);		
 		printf("Father: I'll kill you son\n");	
 		kill(processus,SIGUSR1);
+		wait(NULL);
 		while(1){
 			printf("Father: I'm your father\n");
 			sleep(10);
