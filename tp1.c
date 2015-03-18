@@ -6,7 +6,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <sys/time.h>
-#define PINGPONG_MAX 1000
+#define PINGPONG_MAX 2000
 
 /*
 	Son Handler
@@ -54,6 +54,11 @@ int main(int argc, char ** argv){
    	}
 
 	son_processus = fork();
+	if (son_processus == -1) {
+       perror("fork");
+       exit(EXIT_FAILURE);
+   }
+
 	if(son_processus == 0){
 		close(father_to_son_pipefd[1]); // Close unused write end
 		close(son_to_father_pipefd[0]); // Close unused read end
