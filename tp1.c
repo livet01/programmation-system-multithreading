@@ -6,35 +6,42 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#define SON 0
-
-int processus;
-
+/*
+	Son Handler
+	Function executed when SIGUSR1 is sended
+	Before his death, son send a SIGCHLD to his father (else is not really dead) 
+*/
 void son_handler(int sig){
 	if(sig == SIGUSR1){
 		printf("Son: --->down<---\n");
 		kill(getppid(),SIGCHLD);
-		exit(1);
+		exit(EXIT_SUCCESS);
 	}
 }
 
+/*
+	Father Handler
+	Function executed when SIGUSR1 is sended
+*/
 void father_handler(int sig){
 	if(sig == SIGUSR1){
 		printf("Father: --->hit<---\n");
-		exit(1);
+		exit(EXIT_SUCCESS);
 	}
 }
 
 int main(int argc, char ** argv){
+	int son_processus = 0;
 	sigset_t mask;
 	struct sigaction signal_conf;
-
-	sigfillset(&mask);
-	sigdelset(&mask,SIGUSR1);
+	
+	// SIG conf
+	sigfillset(&mask); // Set all bit mask to 1. Default all signals are ignored 
+	sigdelset(&mask,SIGUSR1); // Un-mask SIGUSR1
 	signal_conf.sa_flags = 0;
 
-	processus = fork();
-	if(processus == SON){
+	son_processus = fork();
+	if(son_processus == 0){
 		signal_conf.sa_handler = son_handler;
 		signal_conf.sa_mask = mask;
 
@@ -46,7 +53,7 @@ int main(int argc, char ** argv){
 		}
 	}
 	else{
-		sigdelset(&mask,SIGCHLD);
+		sigdelset(&mask,SIGCHLD); // Un-mask SIGCHLD to receive son dead ack
 		signal_conf.sa_handler = father_handler;
 		signal_conf.sa_mask = mask;
 
@@ -54,12 +61,16 @@ int main(int argc, char ** argv){
 
 		sleep(10);		
 		printf("Father: I'll kill you son\n");	
-		kill(processus,SIGUSR1);
-		wait(NULL);
+
+		// Send SIGUSR1 to son process
+		kill(son_processus,SIGUSR1);
+
+		wait(NULL); // Wait SIGCHLD
 		while(1){
 			printf("Father: I'm your father\n");
 			sleep(10);
 		}
 	}
-	return 0;
+
+	return EXIT_SUCCESS;
 }
