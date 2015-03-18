@@ -9,31 +9,33 @@
 
 int processus;
 
-void handler(int sig){
+void son_handler(int sig){
 	if(sig == SIGUSR1){
-		if(processus == SON){
-			printf("Son: --->down<---\n");
-			kill(getppid(),SIGCHLD);
-			exit(1);
-		}
-		else{
-			printf("Father: --->hit<---\n");
-			exit(1);
-		}
+		printf("Son: --->down<---\n");
+		kill(getppid(),SIGCHLD);
+		exit(1);
+	}
+}
+
+void father_handler(int sig){
+	if(sig == SIGUSR1){
+		printf("Father: --->hit<---\n");
+		exit(1);
 	}
 }
 
 int main(int argc, char ** argv){
 
-	signal(SIGUSR1,handler);
 	processus = fork();
 	if(processus == SON){
+		signal(SIGUSR1,son_handler);
 		while(1){
 			printf("Son: I'm alive\n");
 			sleep(10);
 		}
 	}
 	else{
+		signal(SIGUSR1,father_handler);
 		sleep(10);	
 		printf("Father: I'll kill you son\n");	
 		kill(processus,SIGUSR1);
