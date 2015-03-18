@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #define PINGPONG_MAX 1000
 
 /*
@@ -78,6 +79,9 @@ int main(int argc, char ** argv){
 		}
 	}
 	else{
+		struct timeval before, after, delta;
+		double debit = 0.0;
+
 		close(father_to_son_pipefd[0]); // Close unused read end
 		close(son_to_father_pipefd[1]); // Close unused write end
 
@@ -88,12 +92,20 @@ int main(int argc, char ** argv){
 		sigaction(SIGUSR1,&signal_conf,NULL);
 
 		// Write first
+		gettimeofday(&before, NULL);
 		while(data < PINGPONG_MAX){
 			data++;
 			write(father_to_son_pipefd[1],&data,sizeof(int));
 
 			read(son_to_father_pipefd[0], &data,sizeof(int));
 		}
+		gettimeofday(&after, NULL);
+
+		// Debit mesure 
+		delta.tv_sec = after.tv_sec - before.tv_sec;
+		delta.tv_usec = after.tv_usec - before.tv_usec;
+		debit = (1000.0*2.0*4.0*8.0)/delta.tv_usec;
+		printf("Father: execution time %ld.%06ld debit %f Mb\n",delta.tv_sec,delta.tv_usec,debit);
 
 		close(father_to_son_pipefd[0]);
 		close(son_to_father_pipefd[1]);
